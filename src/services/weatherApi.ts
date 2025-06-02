@@ -33,53 +33,51 @@ export interface WeatherReading {
     time_error: string;
   };
   id: string;
+
 }
 
 export interface ApiResponse {
-  data: WeatherReading[];
+  body: WeatherReading[];
 }
 
 const API_URL = 'http://localhost:3001/api/weather';
 
 export const fetchWeatherData = async (): Promise<WeatherReading[]> => {
   try {
-    console.log('Fetching weather data from API...');
-    const response = await axios.get<WeatherReading[]>(API_URL);
-  
-    if (!response.data || !Array.isArray(response.data)) {
+    const response = await axios.get<ApiResponse>(API_URL);
+
+    if (!response.data?.body || !Array.isArray(response.data.body)) {
       console.warn('No data received from API, using mock data');
       return generateMockData();
     }
-    
-    console.log('Weather data fetched successfully:', response.data.length, 'readings');
-    return response.data;
+
+    return response.data.body;
   } catch (error) {
     console.error('Error fetching weather data:', error);
-    console.log('Falling back to mock data...');
     return generateMockData();
   }
 };
 
 export const fetchLastTemperatureData = async (): Promise<number> => {
-  const response = await axios.get<WeatherReading[]>(API_URL);
+  const response = await axios.get<ApiResponse>(API_URL);
   const firstReading = response.data.body[0];
   return firstReading.data.temperature;
-} 
+}
 
 export const fetchLastHumidityData = async (): Promise<number> => {
-  const response = await axios.get<WeatherReading[]>(API_URL);
+  const response = await axios.get<ApiResponse>(API_URL);
   const firstReading = response.data.body[0];
   return firstReading.data.humidity;
 }
 
 export const fetchLastPressureData = async (): Promise<number> => {
-  const response = await axios.get<WeatherReading[]>(API_URL);
+  const response = await axios.get<ApiResponse>(API_URL);
   const firstReading = response.data.body[0];
   return firstReading.data.pressure;
 }
 
 export const fetchLastRainData = async (): Promise<number> => {
-  const response = await axios.get<WeatherReading[]>(API_URL);
+  const response = await axios.get<ApiResponse>(API_URL);
   const firstReading = response.data.body[0];
   return firstReading.data.rain;
 }
@@ -87,12 +85,12 @@ export const fetchLastRainData = async (): Promise<number> => {
 const generateMockData = (): WeatherReading[] => {
   const mockData: WeatherReading[] = [];
   const now = new Date();
-  
+
   for (let i = 0; i < 50; i++) {
     const timestamp = new Date(now.getTime() - i * 30 * 60 * 1000); // 30 minutes intervals
     const baseTemp = 18.5;
     const tempVariation = Math.sin(i * 0.2) * 3 + Math.random() * 2 - 1;
-    
+
     mockData.push({
       meta: null,
       parser_id: "d4cbb9af-7221-4666-8b4c-b6ede670ea2d",
@@ -128,6 +126,6 @@ const generateMockData = (): WeatherReading[] => {
       id: `mock-id-${i}`
     });
   }
-  
+
   return mockData;
 };
