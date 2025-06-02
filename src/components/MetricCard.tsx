@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 
@@ -74,9 +73,9 @@ const MetricCard: React.FC<MetricCardProps> = ({
         <div className={`
           p-3 rounded-xl bg-white/5 border border-white/10
           group-hover:bg-white/10 transition-all duration-300
-          animate-float
+          active:scale-110
         `}>
-          <Icon className={`w-6 h-6 ${iconColors[color]} group-hover:scale-110 transition-transform`} />
+          <Icon className={`w-6 h-6 ${iconColors[color]} transition-transform`} />
         </div>
       </div>
     </div>

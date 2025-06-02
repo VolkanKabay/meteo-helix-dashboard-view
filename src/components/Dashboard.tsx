@@ -1,24 +1,28 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  Thermometer, 
-  Droplets, 
-  Gauge, 
-  Sun, 
+import {
+  Thermometer,
+  Droplets,
+  Gauge,
+  Sun,
   CloudRain,
   RefreshCw,
   Activity
 } from 'lucide-react';
-import { fetchWeatherData, WeatherReading } from '../services/weatherApi';
+import { fetchLastTemperatureData, fetchWeatherData, fetchLastHumidityData, fetchLastPressureData, fetchLastRainData } from '../services/weatherApi';
 import MetricCard from './MetricCard';
 import TemperatureChart from './TemperatureChart';
 import WeatherMap from './WeatherMap';
 import StatusIndicator from './StatusIndicator';
-import { Button } from '@/components/ui/button';
+import { LoadingButton } from '@/components/ui/loading-button';
 
 const Dashboard: React.FC = () => {
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [temperature, setTemperature] = useState<number | null>(null);
+  const [humidity, setHumidity] = useState<number | null>(null);
+  const [pressure, setPressure] = useState<number | null>(null);
+  const [rain, setRain] = useState<number | null>(null);
 
   const { data: weatherData = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['weather-data'],
@@ -28,8 +32,10 @@ const Dashboard: React.FC = () => {
   });
 
   const handleRefresh = async () => {
+    setIsRefreshing(true);
     setLastRefresh(new Date());
     await refetch();
+    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -38,6 +44,27 @@ const Dashboard: React.FC = () => {
     }, 60000); // Update last refresh time every minute
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const [temp, hum, pres, rainData] = await Promise.all([
+          fetchLastTemperatureData(),
+          fetchLastHumidityData(),
+          fetchLastPressureData(),
+          fetchLastRainData()
+        ]);
+        setTemperature(temp);
+        setHumidity(hum);
+        setPressure(pres);
+        setRain(rainData);
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+      }
+    };
+
+    fetchMetrics();
   }, []);
 
   const latestReading = weatherData[0];
@@ -71,10 +98,16 @@ const Dashboard: React.FC = () => {
           <CloudRain className="w-12 h-12 text-red-400 mx-auto mb-4" />
           <p className="text-xl font-medium text-white mb-2">Fehler beim Laden der Daten</p>
           <p className="text-slate-400 mb-4">Überprüfe die Verbindung zum IoT Service</p>
-          <Button onClick={handleRefresh} variant="outline" className="bg-white/10 border-white/20">
+          <LoadingButton
+            onClick={handleRefresh}
+            variant="outline"
+            className="bg-white/10 border-white/20"
+            isLoading={isRefreshing}
+            loadingText="Wird aktualisiert..."
+          >
             <RefreshCw className="w-4 h-4 mr-2" />
             Erneut versuchen
-          </Button>
+          </LoadingButton>
         </div>
       </div>
     );
@@ -93,17 +126,19 @@ const Dashboard: React.FC = () => {
               IoT Sensor Daten • {latestReading.data.device_name}
             </p>
           </div>
-          <Button 
-            onClick={handleRefresh} 
-            variant="outline" 
+          <LoadingButton
+            onClick={handleRefresh}
+            variant="outline"
             size="lg"
             className="bg-white/10 border-white/20 hover:bg-white/20 text-white"
+            isLoading={isRefreshing}
+            loadingText="Wird aktualisiert..."
           >
             <RefreshCw className="w-5 h-5 mr-2" />
             Aktualisieren
-          </Button>
+          </LoadingButton>
         </div>
-        
+
         <div className="flex items-center gap-4 text-sm text-slate-400">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse-slow"></div>
@@ -120,47 +155,47 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
           title="Temperatur"
-          value={latestReading.data.temperature}
+          value={temperature}
           unit="°C"
           icon={Thermometer}
           change={previousReading ? calculateChange(
-            latestReading.data.temperature, 
+            temperature ?? latestReading.data.temperature,
             previousReading.data.temperature
           ) : undefined}
           color="primary"
         />
-        
+
         <MetricCard
           title="Luftfeuchtigkeit"
-          value={latestReading.data.humidity}
+          value={humidity }
           unit="%"
           icon={Droplets}
           change={previousReading ? calculateChange(
-            latestReading.data.humidity, 
+            humidity ?? latestReading.data.humidity,
             previousReading.data.humidity
           ) : undefined}
           color="accent"
         />
-        
+
         <MetricCard
           title="Luftdruck"
-          value={(latestReading.data.pressure / 100).toFixed(0)}
+          value={ (pressure / 100).toFixed(0)}
           unit="hPa"
           icon={Gauge}
           change={previousReading ? calculateChange(
-            latestReading.data.pressure, 
+            pressure ?? latestReading.data.pressure,
             previousReading.data.pressure
           ) : undefined}
           color="secondary"
         />
-        
+
         <MetricCard
           title="Niederschlag"
-          value={latestReading.data.rain}
+          value={rain}
           unit="mm"
           icon={CloudRain}
           change={previousReading ? calculateChange(
-            latestReading.data.rain, 
+            rain ?? latestReading.data.rain,
             previousReading.data.rain
           ) : undefined}
           color="warning"
@@ -172,14 +207,14 @@ const Dashboard: React.FC = () => {
         <div className="xl:col-span-2">
           <TemperatureChart data={weatherData} />
         </div>
-        
+
         <div className="space-y-6">
-          <StatusIndicator 
+          <StatusIndicator
             isOnline={weatherData.length > 0}
             batteryLevel={latestReading.data.battery}
             lastUpdate={latestReading.measured_at}
           />
-          
+
           <div className="glass rounded-2xl p-6">
             <h3 className="text-lg font-semibold text-white mb-4">Zusätzliche Sensoren</h3>
             <div className="space-y-3">
@@ -192,7 +227,7 @@ const Dashboard: React.FC = () => {
                   {latestReading.data.irradiation} W/m²
                 </span>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Sun className="w-4 h-4 text-orange-400" />
@@ -202,7 +237,7 @@ const Dashboard: React.FC = () => {
                   {latestReading.data.irr_max} W/m²
                 </span>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Thermometer className="w-4 h-4 text-blue-400" />

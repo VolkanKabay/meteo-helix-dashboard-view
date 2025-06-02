@@ -18,6 +18,12 @@ app.get('/api/weather', async (req, res) => {
   try {
     const API_URL = 'https://iot.skd-ka.de/api/v1/devices/c055eef5-b6dc-406e-ad5a-65dec60db90e/readings?limit=100&sort=measured_at&sort_direction=desc&auth=F20B6E04DCB4C114543B9E1BBACE3C26';
     const response = await axios.get(API_URL);
+    console.log('API Response:', {
+      status: response.status,
+      hasData: !!response.data,
+      dataLength: response.data?.data?.length,
+      dataKeys: response.data ? Object.keys(response.data) : []
+    });
     res.json(response.data);
   } catch (error) {
     console.error('Error fetching weather data:', error.message);
