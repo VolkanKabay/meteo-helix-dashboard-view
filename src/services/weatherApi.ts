@@ -1,3 +1,4 @@
+import axios from 'axios';
 
 export interface WeatherReading {
   meta: null;
@@ -38,23 +39,24 @@ export interface ApiResponse {
   data: WeatherReading[];
 }
 
-const API_URL = 'https://iot.skd-ka.de/api/v1/devices/c055eef5-b6dc-406e-ad5a-65dec60db90e/readings?limit=100&sort=measured_at&sort_direction=desc&auth=F20B6E04DCB4C114543B9E1BBACE3C26';
+const API_URL = 'http://localhost:3001/api/weather';
 
+console.log()
 export const fetchWeatherData = async (): Promise<WeatherReading[]> => {
   try {
     console.log('Fetching weather data from API...');
-    const response = await fetch(API_URL);
+    const response = await axios.get<ApiResponse>(API_URL);
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.data || !response.data.data) {
+      console.warn('No data received from API, using mock data');
+      return generateMockData();
     }
     
-    const result: ApiResponse = await response.json();
-    console.log('Weather data fetched successfully:', result.data?.length || 0, 'readings');
-    return result.data || [];
+    console.log('Weather data fetched successfully:', response.data.data.length, 'readings');
+    return response.data.data;
   } catch (error) {
     console.error('Error fetching weather data:', error);
-    // Return mock data if API fails
+    console.log('Falling back to mock data...');
     return generateMockData();
   }
 };
