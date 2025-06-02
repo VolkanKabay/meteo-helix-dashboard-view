@@ -1,14 +1,34 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapPin, Satellite, Thermometer } from 'lucide-react';
 import { WeatherReading } from '../services/weatherApi';
+import 'leaflet/dist/leaflet.css';
 
 interface WeatherMapProps {
   data: WeatherReading[];
 }
 
 const WeatherMap: React.FC<WeatherMapProps> = ({ data }) => {
+  const [Map, setMap] = useState<any>(null);
   const latestReading = data[0];
+
+  useEffect(() => {
+    const loadMap = async () => {
+      const L = await import('leaflet');
+      const { MapContainer, TileLayer, Marker, Popup } = await import('react-leaflet');
+
+      // Fix for default marker icons in Leaflet
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      });
+
+      setMap({ MapContainer, TileLayer, Marker, Popup });
+    };
+
+    loadMap();
+  }, []);
 
   if (!latestReading) {
     return (
@@ -23,6 +43,26 @@ const WeatherMap: React.FC<WeatherMapProps> = ({ data }) => {
     );
   }
 
+  if (!Map) {
+    return (
+      <div className="map-container animate-fade-in">
+        <div className="h-96 flex items-center justify-center">
+          <div className="text-center">
+            <Satellite className="w-12 h-12 text-slate-400 mx-auto mb-4 animate-pulse-slow" />
+            <p className="text-slate-400">Lade Karte...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const position = [
+    latestReading.data.gps_lat,
+    latestReading.data.gps_lon
+  ];
+
+  const { MapContainer, TileLayer, Marker, Popup } = Map;
+
   return (
     <div className="map-container animate-fade-in">
       <div className="p-6">
@@ -34,48 +74,35 @@ const WeatherMap: React.FC<WeatherMapProps> = ({ data }) => {
           </div>
         </div>
         
-        {/* Map Background */}
-        <div className="relative h-80 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl overflow-hidden border border-white/10">
-          {/* Simulated Map Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-900/20 to-accent-900/20"></div>
-          
-          {/* Grid Pattern */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="grid grid-cols-8 grid-rows-6 h-full w-full">
-              {Array.from({ length: 48 }).map((_, i) => (
-                <div key={i} className="border border-white/5"></div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Sensor Location */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              {/* Pulsing Circle */}
-              <div className="absolute -inset-4 bg-primary-500/30 rounded-full animate-ping"></div>
-              <div className="absolute -inset-2 bg-primary-500/50 rounded-full animate-pulse-slow"></div>
-              
-              {/* Sensor Pin */}
-              <div className="relative z-10 bg-primary-500 p-3 rounded-full border-2 border-white shadow-lg">
-                <Thermometer className="w-5 h-5 text-white" />
-              </div>
-              
-              {/* Info Card */}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-4 w-64">
-                <div className="glass-strong rounded-lg p-4 border border-white/20">
-                  <h4 className="font-semibold text-white mb-2">
+        {/* Map Container */}
+        <div className="relative h-80 rounded-2xl overflow-hidden border border-white/10">
+          <MapContainer
+            center={position}
+            zoom={15}
+            className="h-full w-full"
+            style={{ background: '#1e293b' }}
+            scrollWheelZoom={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <Marker position={position}>
+              <Popup>
+                <div className="p-2">
+                  <h4 className="font-semibold mb-2">
                     {latestReading.data.device_name}
                   </h4>
-                  <div className="space-y-1 text-sm text-slate-300">
+                  <div className="space-y-1 text-sm">
                     <p>📍 {latestReading.data.Anordnung_vor_Ort}</p>
                     <p>🌡️ {latestReading.data.temperature.toFixed(1)}°C</p>
                     <p>💧 {latestReading.data.humidity.toFixed(1)}% Luftfeuchtigkeit</p>
                     <p>⚡ {latestReading.data.battery.toFixed(1)}V Batterie</p>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
+              </Popup>
+            </Marker>
+          </MapContainer>
           
           {/* Coordinates Display */}
           <div className="absolute bottom-4 left-4 glass rounded-lg px-3 py-2 text-xs text-slate-400">
