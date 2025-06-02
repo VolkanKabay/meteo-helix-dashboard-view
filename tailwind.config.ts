@@ -131,7 +131,7 @@ export default {
 						opacity: '1'
 					},
 					'50%': {
-						opacity: '0.7'
+						opacity: '0.8'
 					}
 				},
 				'float': {
@@ -139,7 +139,7 @@ export default {
 						transform: 'translateY(0px)'
 					},
 					'50%': {
-						transform: 'translateY(-10px)'
+						transform: 'translateY(-3px)'
 					}
 				}
 			},
@@ -148,8 +148,8 @@ export default {
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.6s ease-out',
 				'scale-in': 'scale-in 0.4s ease-out',
-				'pulse-slow': 'pulse-slow 3s ease-in-out infinite',
-				'float': 'float 6s ease-in-out infinite'
+				'pulse-slow': 'pulse-slow 4s ease-in-out infinite',
+				'float': 'float 8s ease-in-out infinite'
 			},
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
