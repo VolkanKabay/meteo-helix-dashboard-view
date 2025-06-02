@@ -118,13 +118,22 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="mb-8 animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">
-              Karlsruhe Weather Dashboard
-            </h1>
-            <p className="text-slate-400 text-lg">
-              IoT Sensor Daten • {latestReading.data.device_name}
-            </p>
+          <div className="flex items-center gap-4">
+            <img
+              src="/logo1.png"
+              alt="Weather Dashboard Logo"
+              width={100}
+              height={100}
+              className="rounded-lg"
+            />
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">
+                Karlsruhe Weather Dashboard
+              </h1>
+              <p className="text-slate-400 text-lg">
+                IoT Sensor Daten • {latestReading.data.device_name}
+              </p>
+            </div>
           </div>
           <LoadingButton
             onClick={handleRefresh}
