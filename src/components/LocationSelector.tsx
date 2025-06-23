@@ -37,7 +37,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       <DropdownMenuTrigger asChild>
         <Button 
           variant="outline" 
-          className="bg-white/10 border-white/20 hover:bg-white/20 text-white min-w-[200px] justify-between"
+          className="bg-white/10 border-white/20 hover:bg-white/20 text-white min-w-[160px] sm:min-w-[200px] justify-between text-sm"
           disabled={isLoading}
         >
           <div className="flex items-center gap-2">
@@ -46,7 +46,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             ) : (
               <MapPin className="w-4 h-4" />
             )}
-            <span className="truncate">
+            <span className="truncate text-xs sm:text-sm">
               {isLoading ? 'Lade...' : selectedLocation.name}
             </span>
           </div>

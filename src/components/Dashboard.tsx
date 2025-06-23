@@ -139,28 +139,28 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-3 sm:p-6">
       {/* Header */}
       <div className="mb-8 animate-fade-in">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <img
               src="/logo1.png"
               alt="Weather Dashboard Logo"
-              width={100}
-              height={100}
-              className="rounded-lg"
+              width={80}
+              height={80}
+              className="rounded-lg w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24"
             />
             <div>
-              <h1 className="text-4xl font-bold text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
                 CityClim Dashboard
               </h1>
-              <p className="text-slate-400 text-lg">
+              <p className="text-slate-400 text-sm sm:text-base lg:text-lg">
                 IoT Sensor Daten • {latestReading.data.device_name}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <LocationSelector
               selectedLocation={selectedLocation}
               onLocationChange={handleLocationChange}
@@ -170,31 +170,32 @@ const Dashboard: React.FC = () => {
             <LoadingButton
               onClick={handleRefresh}
               variant="outline"
-              size="lg"
+              size="default"
               className="bg-white/10 border-white/20 hover:bg-white/20 text-white"
               isLoading={isRefreshing}
               loadingText="Wird aktualisiert..."
             >
-              <RefreshCw className="w-5 h-5 mr-2" />
-              Aktualisieren
+              <RefreshCw className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Aktualisieren</span>
+              <span className="sm:hidden">Aktual.</span>
             </LoadingButton>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-slate-400">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-slate-400">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse-fast"></div>
             <span>Live Daten</span>
           </div>
-          <span>•</span>
-          <span>
+          <span className="hidden sm:inline">•</span>
+          <span className="text-xs sm:text-sm">
             Letztes Update: {new Date(latestReading.measured_at).toLocaleString('de-DE')}
           </span>
         </div>
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <MetricCard
           title="Temperatur"
           value={temperature}
@@ -245,27 +246,27 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Charts and Map */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 sm:gap-8 mb-8">
         <div className="xl:col-span-2">
           <TemperatureChart data={weatherData} />
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           <StatusIndicator
             isOnline={weatherData.length > 0}
             batteryLevel={latestReading.data.battery}
             lastUpdate={latestReading.measured_at}
           />
 
-          <div className="glass rounded-2xl p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Zusätzliche Sensoren</h3>
+          <div className="glass rounded-2xl p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Zusätzliche Sensoren</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Sun className="w-4 h-4 text-yellow-400" />
-                  <span className="text-sm text-slate-300">Sonneneinstrahlung</span>
+                  <span className="text-xs sm:text-sm text-slate-300">Sonneneinstrahlung</span>
                 </div>
-                <span className="text-sm font-medium text-white">
+                <span className="text-xs sm:text-sm font-medium text-white">
                   {latestReading.data.irradiation} W/m²
                 </span>
               </div>
@@ -273,9 +274,9 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Sun className="w-4 h-4 text-orange-400" />
-                  <span className="text-sm text-slate-300">Max. Einstrahlung</span>
+                  <span className="text-xs sm:text-sm text-slate-300">Max. Einstrahlung</span>
                 </div>
-                <span className="text-sm font-medium text-white">
+                <span className="text-xs sm:text-sm font-medium text-white">
                   {latestReading.data.irr_max} W/m²
                 </span>
               </div>
@@ -283,9 +284,9 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Thermometer className="w-4 h-4 text-blue-400" />
-                  <span className="text-sm text-slate-300">Min/Max Temp</span>
+                  <span className="text-xs sm:text-sm text-slate-300">Min/Max Temp</span>
                 </div>
-                <span className="text-sm font-medium text-white">
+                <span className="text-xs sm:text-sm font-medium text-white">
                   {latestReading.data.t_min.toFixed(1)}° / {latestReading.data.t_max.toFixed(1)}°
                 </span>
               </div>

@@ -276,24 +276,23 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
   return (
     <div className="glass rounded-2xl p-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-xl font-bold text-white mb-2">Durchschnittswerte der letzten {amountOfDays} Tage</h3>
-          <p className="text-slate-400">Statistische Analyse basierend auf {Math.min(weatherData.length, dataPoints)} von {weatherData.length} verfügbaren Datensätzen</p>
+          <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Durchschnittswerte der letzten {amountOfDays} Tage</h3>
+          <p className="text-slate-400 text-sm">Statistische Analyse basierend auf {Math.min(weatherData.length, dataPoints)} von {weatherData.length} verfügbaren Datensätzen</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-slate-400" />
             <select
               value={dataPoints}
               onChange={(e) => setDataPoints(Number(e.target.value))}
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-white text-sm"
+              className="bg-white/10 border border-white/20 rounded-lg px-2 sm:px-3 py-1 text-white text-xs sm:text-sm"
             >
               <option value={500} className="bg-black/70">Letzte 500</option>
               <option value={1000} className="bg-black/70">Letzte 1000</option>
             </select>
           </div>
-      
         </div>
       </div>
 
@@ -303,7 +302,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
           <Info className="w-4 h-4 text-blue-400" />
           <span className="text-sm font-medium text-white">Erkenntnisse</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {insights.map((insight, index) => (
             <div key={index} className="bg-white/5 rounded-lg px-3 py-2 text-xs text-slate-300">
               {insight}
@@ -318,12 +317,12 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
           <Clock className="w-4 h-4 inline mr-2" />
           Uhrzeit für detaillierte Analyse
         </label>
-        <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
+        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-1 sm:gap-2">
           {Array.from({ length: 24 }, (_, i) => (
             <button
               key={i}
               onClick={() => setSelectedHour(i)}
-              className={`p-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`p-1 sm:p-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 selectedHour === i
                   ? 'bg-primary-500 text-white'
                   : 'bg-white/10 text-slate-300 hover:bg-white/20'
@@ -338,18 +337,18 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
       {/* Advanced Forecast Display */}
       {selectedForecast && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Temperature */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
+            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Thermometer className="w-5 h-5 text-red-400" />
-                  <span className="text-sm font-medium text-white">Temperatur</span>
+                  <Thermometer className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                  <span className="text-xs sm:text-sm font-medium text-white">Temperatur</span>
                 </div>
                 {getTrendIcon(selectedForecast.temperature.trend)}
               </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-white">
+              <div className="space-y-1 sm:space-y-2">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {selectedForecast.temperature.average.toFixed(1)}°C
                 </div>
                 <div className="text-xs text-slate-400">
@@ -366,16 +365,16 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
             </div>
 
             {/* Humidity */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
+            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Droplets className="w-5 h-5 text-blue-400" />
-                  <span className="text-sm font-medium text-white">Luftfeuchtigkeit</span>
+                  <Droplets className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+                  <span className="text-xs sm:text-sm font-medium text-white">Luftfeuchtigkeit</span>
                 </div>
                 {getTrendIcon(selectedForecast.humidity.trend)}
               </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-white">
+              <div className="space-y-1 sm:space-y-2">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {selectedForecast.humidity.average.toFixed(1)}%
                 </div>
                 <div className="text-xs text-slate-400">
@@ -392,16 +391,16 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
             </div>
 
             {/* Pressure */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
+            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <Gauge className="w-5 h-5 text-green-400" />
-                  <span className="text-sm font-medium text-white">Luftdruck</span>
+                  <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                  <span className="text-xs sm:text-sm font-medium text-white">Luftdruck</span>
                 </div>
                 {getTrendIcon(selectedForecast.pressure.trend)}
               </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-white">
+              <div className="space-y-1 sm:space-y-2">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {(selectedForecast.pressure.average / 100).toFixed(0)} hPa
                 </div>
                 <div className="text-xs text-slate-400">
@@ -418,18 +417,18 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
             </div>
 
             {/* Rain */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
+            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <CloudRain className="w-5 h-5 text-purple-400" />
-                  <span className="text-sm font-medium text-white">Niederschlag</span>
+                  <CloudRain className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  <span className="text-xs sm:text-sm font-medium text-white">Niederschlag</span>
                 </div>
                 <span className={`text-xs font-medium ${getRainIntensityColor(selectedForecast.rain.intensity)}`}>
                   {selectedForecast.rain.intensity.toUpperCase()}
                 </span>
               </div>
-              <div className="space-y-2">
-                <div className="text-2xl font-bold text-white">
+              <div className="space-y-1 sm:space-y-2">
+                <div className="text-xl sm:text-2xl font-bold text-white">
                   {(selectedForecast.rain.probability * 100).toFixed(0)}%
                 </div>
                 <div className="text-xs text-slate-400">
@@ -446,9 +445,9 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
           </div>
 
           {/* Statistical Chart */}
-          <div className="glass-strong rounded-xl p-4 border border-white/20 ">
-            <h4 className="text-lg font-semibold text-white mb-4">Statistischer 24-Stunden Verlauf</h4>
-            <div className="h-32 flex items-end justify-between gap-1">
+          <div className="glass-strong rounded-xl p-4 border border-white/20">
+            <h4 className="text-base sm:text-lg font-semibold text-white mb-4">Statistischer 24-Stunden Verlauf</h4>
+            <div className="h-24 sm:h-32 flex items-end justify-between gap-1">
               {forecastData.map((data, index) => (
                 <div
                   key={data.hour}
@@ -462,13 +461,13 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
                         : 'bg-white/20 hover:bg-white/30'
                     }`}
                     style={{
-                      height: `${Math.max(10, (data.temperature.average + 10) * 2)}px`
+                      height: `${Math.max(8, (data.temperature.average + 10) * 1.5)}px`
                     }}
                   />
-                  <div className="text-xs text-slate-400 mt-1">
+                  <div className="text-xs text-slate-400 mt-1 hidden sm:block">
                     {getTimeLabel(data.hour)}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">
+                  <div className="text-xs text-slate-500 mt-1 hidden lg:block">
                     ±{data.temperature.standardDeviation.toFixed(1)}
                   </div>
                 </div>
