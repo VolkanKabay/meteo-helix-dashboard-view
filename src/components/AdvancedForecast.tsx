@@ -72,7 +72,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
   });
   const [forecastData, setForecastData] = useState<AdvancedForecastData[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
-
+  const amountOfDays = `ca. ${Math.ceil((dataPoints * 10) / (24 * 60))}`; // 10 minutes per data point, convert to days and round up
   // Calculate standard deviation
   const calculateStandardDeviation = (values: number[]): number => {
     const mean = values.reduce((a, b) => a + b, 0) / values.length;
@@ -280,7 +280,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-white mb-2">Erweiterte Wetterprognose</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Erweiterte Wetterprognose der letzten {amountOfDays} Tage</h3>
           <p className="text-slate-400">Statistische Analyse basierend auf {Math.min(weatherData.length, dataPoints)} von {weatherData.length} verfügbaren Datensätzen</p>
         </div>
         <div className="flex items-center gap-4">
@@ -295,15 +295,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
               <option value={1000} className="bg-black/70">Letzte 1000</option>
             </select>
           </div>
-          <LoadingButton
-            onClick={() => refetch()}
-            variant="outline"
-            size="sm"
-            className="bg-white/10 border-white/20"
-          >
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Aktualisieren
-          </LoadingButton>
+      
         </div>
       </div>
 
