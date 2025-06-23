@@ -51,46 +51,6 @@ app.get('/api/weather', async (req, res) => {
   }
 });
 
-// Historical weather data endpoint for forecasting
-app.get('/api/weather/historical', async (req, res) => {
-  try {
-    const deviceId = req.query.deviceId || 'c055eef5-b6dc-406e-ad5a-65dec60db90e';
-    const limit = req.query.limit || 1000;
-    
-    console.log('Historical data request:', {
-      query: req.query,
-      deviceId: deviceId,
-      limit: limit
-    });
-    
-    // Define the available devices and their URLs with higher limits for historical data
-    const DEVICE_URLS = {
-      'c055eef5-b6dc-406e-ad5a-65dec60db90e': `https://iot.skd-ka.de/api/v1/devices/c055eef5-b6dc-406e-ad5a-65dec60db90e/readings?limit=${limit}&sort=measured_at&sort_direction=desc&auth=F20B6E04DCB4C114543B9E1BBACE3C26`, // Kaiserplatz
-      '7ceb0590-e2f0-4f9e-a3dc-5257a4729f57': `https://iot.skd-ka.de/api/v1/devices/7ceb0590-e2f0-4f9e-a3dc-5257a4729f57/readings?limit=${limit}&sort=measured_at&sort_direction=desc&auth=F20B6E04DCB4C114543B9E1BBACE3C26` // Albtahl
-    };
-    
-    // Get the URL for the selected device, fallback to Kaiserplatz if device not found
-    const apiUrl = DEVICE_URLS[deviceId] || DEVICE_URLS['c055eef5-b6dc-406e-ad5a-65dec60db90e'];
-    
-    console.log('Fetching historical data from URL:', apiUrl);
-    
-    const response = await axios.get(apiUrl);
-
-    console.log('Historical API Response:', {
-      deviceId,
-      limit,
-      status: response.status,
-      hasData: !!response.data,
-      dataLength: response.data?.body?.length,
-      dataKeys: response.data ? Object.keys(response.data) : []
-    });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error fetching historical weather data:', error.message);
-    res.status(500).json({ error: 'Failed to fetch historical weather data' });
-  }
-});
-
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 }); 

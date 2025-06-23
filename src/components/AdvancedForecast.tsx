@@ -14,8 +14,7 @@ import {
   Info,
   AlertTriangle
 } from 'lucide-react';
-import { fetchHistoricalWeatherData } from '../services/weatherApi';
-import { WeatherReading } from '../services/weatherApi';
+import { fetchWeatherData, WeatherReading } from '../services/weatherApi';
 import { LoadingButton } from '@/components/ui/loading-button';
 
 interface AdvancedForecastData {
@@ -64,14 +63,13 @@ interface AdvancedForecastProps {
 const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
   const [selectedHour, setSelectedHour] = useState<number>(new Date().getHours());
   const [dataPoints, setDataPoints] = useState<number>(1000);
-  const [analysisType, setAnalysisType] = useState<'hourly' | 'daily' | 'seasonal'>('hourly');
 
-  const { data: historicalData = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ['advanced-historical-weather-data', deviceId, dataPoints],
-    queryFn: () => fetchHistoricalWeatherData(deviceId, dataPoints),
+  const { data: weatherData = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ['weather-data', deviceId],
+    queryFn: () => fetchWeatherData(deviceId),
+    refetchInterval: 5 * 60 * 1000, // every 5 minutes
     retry: 3,
   });
-
   const [forecastData, setForecastData] = useState<AdvancedForecastData[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
 
@@ -103,12 +101,15 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
 
   // Calculate forecast data from historical data
   useEffect(() => {
-    if (historicalData.length === 0) return;
+    if (weatherData.length === 0) return;
+
+    // Limit data points based on user selection
+    const limitedData = weatherData.slice(0, dataPoints);
 
     const hourlyData: { [hour: number]: WeatherReading[] } = {};
 
     // Group data by hour
-    historicalData.forEach(reading => {
+    limitedData.forEach(reading => {
       const hour = new Date(reading.measured_at).getHours();
       if (!hourlyData[hour]) {
         hourlyData[hour] = [];
@@ -210,7 +211,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
     }
 
     setInsights(newInsights);
-  }, [historicalData]);
+  }, [weatherData, dataPoints]);
 
   const selectedForecast = forecastData.find(f => f.hour === selectedHour);
 
@@ -280,7 +281,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-xl font-bold text-white mb-2">Erweiterte Wetterprognose</h3>
-          <p className="text-slate-400">Statistische Analyse basierend auf {historicalData.length} Datensätzen</p>
+          <p className="text-slate-400">Statistische Analyse basierend auf {Math.min(weatherData.length, dataPoints)} von {weatherData.length} verfügbaren Datensätzen</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -290,9 +291,8 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
               onChange={(e) => setDataPoints(Number(e.target.value))}
               className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-white text-sm"
             >
-              <option value={100} className="bg-black/70 border border-white/20 rounded-lg px-3 py-1 text-white text-sm">Letzte 100</option>
-              <option value={500} className="bg-black/70 border border-white/20 rounded-lg px-3 py-1 text-white text-sm">Letzte 500</option>
-              <option value={1000} className="bg-black/70 border border-white/20 rounded-lg px-3 py-1 text-white text-sm">Letzte 1000</option>
+              <option value={500} className="bg-black/70">Letzte 500</option>
+              <option value={1000} className="bg-black/70">Letzte 1000</option>
             </select>
           </div>
           <LoadingButton
