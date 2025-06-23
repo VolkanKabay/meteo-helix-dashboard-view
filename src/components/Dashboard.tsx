@@ -17,7 +17,10 @@ import TemperatureChart from './TemperatureChart';
 import WeatherMap from './WeatherMap';
 import StatusIndicator from './StatusIndicator';
 import LocationSelector from './LocationSelector';
+import WeatherForecast from './WeatherForecast';
+import AdvancedForecast from './AdvancedForecast';
 import { LoadingButton } from '@/components/ui/loading-button';
+import ForecastTabs from './ForecastTabs';
 
 const Dashboard: React.FC = () => {
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -28,6 +31,7 @@ const Dashboard: React.FC = () => {
   const [pressure, setPressure] = useState<number | null>(null);
   const [rain, setRain] = useState<number | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location>(getDefaultLocation());
+  const [forecastTab, setForecastTab] = useState<'basic' | 'advanced'>('basic');
 
   const { data: weatherData = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['weather-data', selectedLocation.deviceId],
@@ -205,7 +209,7 @@ const Dashboard: React.FC = () => {
 
         <MetricCard
           title="Luftfeuchtigkeit"
-          value={humidity }
+          value={humidity}
           unit="%"
           icon={Droplets}
           change={previousReading ? calculateChange(
@@ -217,7 +221,7 @@ const Dashboard: React.FC = () => {
 
         <MetricCard
           title="Luftdruck"
-          value={ (pressure / 100).toFixed(0)}
+          value={(pressure / 100).toFixed(0)}
           unit="hPa"
           icon={Gauge}
           change={previousReading ? calculateChange(
@@ -292,6 +296,13 @@ const Dashboard: React.FC = () => {
 
       {/* Map */}
       <WeatherMap data={weatherData} />
+
+      <div className="mt-8">
+      
+        <div>
+          <AdvancedForecast deviceId={selectedLocation.deviceId} />
+        </div>
+      </div>
     </div>
   );
 };
