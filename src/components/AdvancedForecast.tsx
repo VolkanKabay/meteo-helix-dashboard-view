@@ -340,7 +340,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Temperature */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20">
+            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Thermometer className="w-5 h-5 text-red-400" />
@@ -366,7 +366,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
             </div>
 
             {/* Humidity */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20">
+            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Droplets className="w-5 h-5 text-blue-400" />
@@ -392,7 +392,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
             </div>
 
             {/* Pressure */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20">
+            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <Gauge className="w-5 h-5 text-green-400" />
@@ -418,7 +418,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
             </div>
 
             {/* Rain */}
-            <div className="glass-strong rounded-xl p-4 border border-white/20">
+            <div className="glass-strong rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <CloudRain className="w-5 h-5 text-purple-400" />
@@ -446,7 +446,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
           </div>
 
           {/* Statistical Chart */}
-          <div className="glass-strong rounded-xl p-4 border border-white/20">
+          <div className="glass-strong rounded-xl p-4 border border-white/20 ">
             <h4 className="text-lg font-semibold text-white mb-4">Statistischer 24-Stunden Verlauf</h4>
             <div className="h-32 flex items-end justify-between gap-1">
               {forecastData.map((data, index) => (
