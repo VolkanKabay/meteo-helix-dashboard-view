@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MapPin, Satellite, Thermometer } from 'lucide-react';
 import { WeatherReading } from '../services/weatherApi';
+import { locations } from '../config/locations';
 import 'leaflet/dist/leaflet.css';
 
 interface WeatherMapProps {
@@ -56,10 +57,10 @@ const WeatherMap: React.FC<WeatherMapProps> = ({ data }) => {
     );
   }
 
-  const position = [
-    latestReading.data.gps_lat,
-    latestReading.data.gps_lon
-  ];
+  // Calculate center point between both locations for better map view
+  const centerLat = (locations[0].coordinates.lat + locations[1].coordinates.lat) / 2;
+  const centerLon = (locations[0].coordinates.lon + locations[1].coordinates.lon) / 2;
+  const centerPosition = [centerLat, centerLon];
 
   const { MapContainer, TileLayer, Marker, Popup } = Map;
 
@@ -77,8 +78,8 @@ const WeatherMap: React.FC<WeatherMapProps> = ({ data }) => {
         {/* Map Container */}
         <div className="relative h-80 rounded-2xl overflow-hidden border border-white/10">
           <MapContainer
-            center={position}
-            zoom={15}
+            center={centerPosition}
+            zoom={13}
             className="h-full w-full"
             style={{ background: '#1e293b' }}
             scrollWheelZoom={false}
@@ -87,21 +88,39 @@ const WeatherMap: React.FC<WeatherMapProps> = ({ data }) => {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <Marker position={position}>
-              <Popup>
-                <div className="p-2">
-                  <h4 className="font-semibold mb-2">
-                    {latestReading.data.device_name}
-                  </h4>
-                  <div className="space-y-1 text-sm">
-                    <p>📍 {latestReading.data.Anordnung_vor_Ort}</p>
-                    <p>🌡️ {latestReading.data.temperature.toFixed(1)}°C</p>
-                    <p>💧 {latestReading.data.humidity.toFixed(1)}% Luftfeuchtigkeit</p>
-                    <p>⚡ {latestReading.data.battery.toFixed(1)}V Batterie</p>
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
+            
+            {/* Render markers for all locations */}
+            {locations.map((location) => {
+              const isActiveLocation = latestReading?.device_id === location.deviceId;
+              const locationData = isActiveLocation ? latestReading : null;
+              
+              return (
+                <Marker 
+                  key={location.id} 
+                  position={[location.coordinates.lat, location.coordinates.lon]}
+                >
+                  <Popup>
+                    <div className="p-2">
+                      <h4 className="font-semibold mb-2">
+                        {location.name}
+                      </h4>
+                      <div className="space-y-1 text-sm">
+                        <p>📍 {location.description}</p>
+                        {locationData ? (
+                          <>
+                            <p>🌡️ {locationData.data.temperature.toFixed(1)}°C</p>
+                            <p>💧 {locationData.data.humidity.toFixed(1)}% Luftfeuchtigkeit</p>
+                            <p>⚡ {locationData.data.battery.toFixed(1)}V Batterie</p>
+                          </>
+                        ) : (
+                          <p className="text-slate-400">Keine aktuellen Daten verfügbar</p>
+                        )}
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
           
           {/* Coordinates Display */}
@@ -111,9 +130,15 @@ const WeatherMap: React.FC<WeatherMapProps> = ({ data }) => {
           
           {/* Legend */}
           <div className="absolute top-4 right-4 glass rounded-lg p-3">
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
-              <span>Aktiver Sensor</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="w-3 h-3 bg-primary-500 rounded-full"></div>
+                <span>Aktiver Sensor</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
+                <span>Weitere Sensoren</span>
+              </div>
             </div>
           </div>
         </div>

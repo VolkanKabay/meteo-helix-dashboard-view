@@ -149,7 +149,7 @@ const Dashboard: React.FC = () => {
             />
             <div>
               <h1 className="text-4xl font-bold text-white mb-2">
-                Karlsruhe Weather Dashboard
+                CityClim Dashboard
               </h1>
               <p className="text-slate-400 text-lg">
                 IoT Sensor Daten • {latestReading.data.device_name}
