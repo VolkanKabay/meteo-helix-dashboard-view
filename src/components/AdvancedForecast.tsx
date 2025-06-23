@@ -193,13 +193,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
     
     // Temperature insights
     const avgTemp = forecast.reduce((sum, f) => sum + f.temperature.average, 0) / 24;
-    const tempRange = Math.max(...forecast.map(f => f.temperature.max)) - Math.min(...forecast.map(f => f.temperature.min));
     newInsights.push(`Durchschnittstemperatur: ${avgTemp.toFixed(1)}°C`);
-    newInsights.push(`Temperaturbereich: ${tempRange.toFixed(1)}°C`);
-    
-    // Rain insights
-    const totalRainProbability = forecast.reduce((sum, f) => sum + f.rain.probability, 0) / 24;
-    newInsights.push(`Regenwahrscheinlichkeit: ${(totalRainProbability * 100).toFixed(0)}%`);
     
     // Trend insights
     const increasingTrends = forecast.filter(f => f.temperature.trend === 'increasing').length;
@@ -209,6 +203,10 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
     } else if (decreasingTrends > increasingTrends) {
       newInsights.push('Temperatur zeigt überwiegend fallende Tendenz');
     }
+    // Rain insights
+    const totalRainProbability = forecast.reduce((sum, f) => sum + f.rain.probability, 0) / 24;
+    newInsights.push(`Regenwahrscheinlichkeit: ${(totalRainProbability * 100).toFixed(0)}%`);
+    
 
     setInsights(newInsights);
   }, [weatherData, dataPoints]);
@@ -280,7 +278,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-white mb-2">Erweiterte Wetterprognose der letzten {amountOfDays} Tage</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Durchschnittswerte der letzten {amountOfDays} Tage</h3>
           <p className="text-slate-400">Statistische Analyse basierend auf {Math.min(weatherData.length, dataPoints)} von {weatherData.length} verfügbaren Datensätzen</p>
         </div>
         <div className="flex items-center gap-4">
