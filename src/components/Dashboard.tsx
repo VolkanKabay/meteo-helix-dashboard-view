@@ -18,9 +18,10 @@ import WeatherMap from './WeatherMap';
 import StatusIndicator from './StatusIndicator';
 import LocationSelector from './LocationSelector';
 import WeatherForecast from './WeatherForecast';
-import AdvancedForecast from './AdvancedForecast';
+import WeatherPrediction from './WeatherPrediction';
 import { LoadingButton } from '@/components/ui/loading-button';
 import ForecastTabs from './ForecastTabs';
+import AdvancedForecast from './AdvancedForecast';
 
 const Dashboard: React.FC = () => {
   const [lastRefresh, setLastRefresh] = useState(new Date());
@@ -297,12 +298,11 @@ const Dashboard: React.FC = () => {
 
       {/* Map */}
       <WeatherMap data={weatherData} />
-
       <div className="mt-8">
-      
-        <div>
-          <AdvancedForecast deviceId={selectedLocation.deviceId} />
-        </div>
+        <AdvancedForecast deviceId={selectedLocation.deviceId} />
+      </div>
+      <div className="mt-8">
+        <WeatherPrediction deviceId={selectedLocation.deviceId} />
       </div>
     </div>
   );

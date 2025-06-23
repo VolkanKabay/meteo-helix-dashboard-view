@@ -56,13 +56,56 @@ interface AdvancedForecastData {
   };
 }
 
+interface DailyForecastData {
+  day: number; // 0-6 (0 = today, 1 = yesterday, etc.)
+  temperature: {
+    average: number;
+    min: number;
+    max: number;
+    count: number;
+    trend: 'increasing' | 'decreasing' | 'stable';
+    standardDeviation: number;
+  };
+  humidity: {
+    average: number;
+    min: number;
+    max: number;
+    count: number;
+    trend: 'increasing' | 'decreasing' | 'stable';
+    standardDeviation: number;
+  };
+  pressure: {
+    average: number;
+    min: number;
+    max: number;
+    count: number;
+    trend: 'increasing' | 'decreasing' | 'stable';
+    standardDeviation: number;
+  };
+  rain: {
+    average: number;
+    probability: number;
+    count: number;
+    intensity: 'low' | 'medium' | 'high';
+  };
+  seasonality: {
+    temperature: number;
+    humidity: number;
+    pressure: number;
+  };
+}
+
 interface AdvancedForecastProps {
   deviceId: string;
 }
 
+type AnalysisMode = 'hourly' | 'daily';
+
 const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
   const [selectedHour, setSelectedHour] = useState<number>(new Date().getHours());
+  const [selectedDay, setSelectedDay] = useState<number>(0); // 0 = today
   const [dataPoints, setDataPoints] = useState<number>(1000);
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('hourly');
 
   const { data: weatherData = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['weather-data', deviceId],
@@ -71,6 +114,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
     retry: 3,
   });
   const [forecastData, setForecastData] = useState<AdvancedForecastData[]>([]);
+  const [dailyForecastData, setDailyForecastData] = useState<DailyForecastData[]>([]);
   const [insights, setInsights] = useState<string[]>([]);
   const amountOfDays = `ca. ${Math.ceil((dataPoints * 10) / (24 * 60))}`; // 10 minutes per data point, convert to days and round up
   // Calculate standard deviation
@@ -106,6 +150,7 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
     // Limit data points based on user selection
     const limitedData = weatherData.slice(0, dataPoints);
 
+    // Calculate hourly data
     const hourlyData: { [hour: number]: WeatherReading[] } = {};
 
     // Group data by hour
@@ -188,6 +233,99 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
 
     setForecastData(forecast);
 
+    // Calculate daily data (only if we have 1000 data points)
+    if (dataPoints === 1000) {
+      const dailyData: { [day: number]: WeatherReading[] } = {};
+
+      // Group data by day (last 7 days)
+      limitedData.forEach(reading => {
+        const readingDate = new Date(reading.measured_at);
+        const today = new Date();
+        const diffTime = Math.abs(today.getTime() - readingDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays <= 7) {
+          const dayIndex = diffDays - 1; // 0 = today, 1 = yesterday, etc.
+          if (!dailyData[dayIndex]) {
+            dailyData[dayIndex] = [];
+          }
+          dailyData[dayIndex].push(reading);
+        }
+      });
+
+      const dailyForecast: DailyForecastData[] = [];
+      for (let day = 0; day < 7; day++) {
+        const readings = dailyData[day] || [];
+        
+        if (readings.length === 0) {
+          dailyForecast.push({
+            day,
+            temperature: { average: 0, min: 0, max: 0, count: 0, trend: 'stable', standardDeviation: 0 },
+            humidity: { average: 0, min: 0, max: 0, count: 0, trend: 'stable', standardDeviation: 0 },
+            pressure: { average: 0, min: 0, max: 0, count: 0, trend: 'stable', standardDeviation: 0 },
+            rain: { average: 0, probability: 0, count: 0, intensity: 'low' },
+            seasonality: { temperature: 0, humidity: 0, pressure: 0 }
+          });
+          continue;
+        }
+
+        const temperatures = readings.map(r => r.data.temperature);
+        const humidities = readings.map(r => r.data.humidity);
+        const pressures = readings.map(r => r.data.pressure);
+        const rains = readings.map(r => r.data.rain);
+
+        const rainProbability = rains.filter(r => r > 0).length / rains.length;
+        const avgRain = rains.reduce((a, b) => a + b, 0) / rains.length;
+        
+        let rainIntensity: 'low' | 'medium' | 'high' = 'low';
+        if (avgRain > 1.0) rainIntensity = 'high';
+        else if (avgRain > 0.3) rainIntensity = 'medium';
+
+        dailyForecast.push({
+          day,
+          temperature: {
+            average: temperatures.reduce((a, b) => a + b, 0) / temperatures.length,
+            min: Math.min(...temperatures),
+            max: Math.max(...temperatures),
+            count: temperatures.length,
+            trend: calculateTrend(temperatures),
+            standardDeviation: calculateStandardDeviation(temperatures)
+          },
+          humidity: {
+            average: humidities.reduce((a, b) => a + b, 0) / humidities.length,
+            min: Math.min(...humidities),
+            max: Math.max(...humidities),
+            count: humidities.length,
+            trend: calculateTrend(humidities),
+            standardDeviation: calculateStandardDeviation(humidities)
+          },
+          pressure: {
+            average: pressures.reduce((a, b) => a + b, 0) / pressures.length,
+            min: Math.min(...pressures),
+            max: Math.max(...pressures),
+            count: pressures.length,
+            trend: calculateTrend(pressures),
+            standardDeviation: calculateStandardDeviation(pressures)
+          },
+          rain: {
+            average: avgRain,
+            probability: rainProbability,
+            count: rains.length,
+            intensity: rainIntensity
+          },
+          seasonality: {
+            temperature: 0,
+            humidity: 0,
+            pressure: 0
+          }
+        });
+      }
+
+      setDailyForecastData(dailyForecast);
+    } else {
+      setDailyForecastData([]);
+    }
+
     // Generate insights
     const newInsights: string[] = [];
     
@@ -212,9 +350,15 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
   }, [weatherData, dataPoints]);
 
   const selectedForecast = forecastData.find(f => f.hour === selectedHour);
+  const selectedDailyForecast = dailyForecastData.find(f => f.day === selectedDay);
 
   const getTimeLabel = (hour: number) => {
     return `${hour.toString().padStart(2, '0')}:00`;
+  };
+
+  const getDayLabel = (day: number) => {
+    const days = ['Heute', 'Gestern', 'Vorgestern', '3 Tage', '4 Tage', '5 Tage', '6 Tage'];
+    return days[day] || `Tag ${day}`;
   };
 
   const getTrendIcon = (trend: string) => {
@@ -311,170 +455,376 @@ const AdvancedForecast: React.FC<AdvancedForecastProps> = ({ deviceId }) => {
         </div>
       </div>
 
-      {/* Hour Selector */}
+      {/* Analysis Mode Tabs */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-white mb-3">
-          <Clock className="w-4 h-4 inline mr-2" />
-          Uhrzeit für detaillierte Analyse
-        </label>
-        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-1 sm:gap-2">
-          {Array.from({ length: 24 }, (_, i) => (
+        <div className="flex bg-white/10 rounded-lg p-1">
+          <button
+            onClick={() => setAnalysisMode('hourly')}
+            className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+              analysisMode === 'hourly'
+                ? 'bg-primary-500 text-white'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Clock className="w-4 h-4 inline mr-2" />
+            Stündlich
+          </button>
+          {dataPoints === 1000 && (
             <button
-              key={i}
-              onClick={() => setSelectedHour(i)}
-              className={`p-1 sm:p-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
-                selectedHour === i
+              onClick={() => setAnalysisMode('daily')}
+              className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                analysisMode === 'daily'
                   ? 'bg-primary-500 text-white'
-                  : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                  : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              {getTimeLabel(i)}
+              <Calendar className="w-4 h-4 inline mr-2" />
+              Täglich (7 Tage)
             </button>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Advanced Forecast Display */}
-      {selectedForecast && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {/* Temperature */}
-            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Thermometer className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
-                  <span className="text-xs sm:text-sm font-medium text-white">Temperatur</span>
-                </div>
-                {getTrendIcon(selectedForecast.temperature.trend)}
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  {selectedForecast.temperature.average.toFixed(1)}°C
-                </div>
-                <div className="text-xs text-slate-400">
-                  Min: {selectedForecast.temperature.min.toFixed(1)}°C | 
-                  Max: {selectedForecast.temperature.max.toFixed(1)}°C
-                </div>
-                <div className="text-xs text-slate-400">
-                  Std. Dev: ±{selectedForecast.temperature.standardDeviation.toFixed(1)}°C
-                </div>
-                <div className="text-xs text-slate-400">
-                  {selectedForecast.temperature.count} Messungen
-                </div>
-              </div>
-            </div>
-
-            {/* Humidity */}
-            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Droplets className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
-                  <span className="text-xs sm:text-sm font-medium text-white">Luftfeuchtigkeit</span>
-                </div>
-                {getTrendIcon(selectedForecast.humidity.trend)}
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  {selectedForecast.humidity.average.toFixed(1)}%
-                </div>
-                <div className="text-xs text-slate-400">
-                  Min: {selectedForecast.humidity.min.toFixed(1)}% | 
-                  Max: {selectedForecast.humidity.max.toFixed(1)}%
-                </div>
-                <div className="text-xs text-slate-400">
-                  Std. Dev: ±{selectedForecast.humidity.standardDeviation.toFixed(1)}%
-                </div>
-                <div className="text-xs text-slate-400">
-                  {selectedForecast.humidity.count} Messungen
-                </div>
-              </div>
-            </div>
-
-            {/* Pressure */}
-            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                  <span className="text-xs sm:text-sm font-medium text-white">Luftdruck</span>
-                </div>
-                {getTrendIcon(selectedForecast.pressure.trend)}
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  {(selectedForecast.pressure.average / 100).toFixed(0)} hPa
-                </div>
-                <div className="text-xs text-slate-400">
-                  Min: {(selectedForecast.pressure.min / 100).toFixed(0)} hPa | 
-                  Max: {(selectedForecast.pressure.max / 100).toFixed(0)} hPa
-                </div>
-                <div className="text-xs text-slate-400">
-                  Std. Dev: ±{(selectedForecast.pressure.standardDeviation / 100).toFixed(0)} hPa
-                </div>
-                <div className="text-xs text-slate-400">
-                  {selectedForecast.pressure.count} Messungen
-                </div>
-              </div>
-            </div>
-
-            {/* Rain */}
-            <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <CloudRain className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
-                  <span className="text-xs sm:text-sm font-medium text-white">Niederschlag</span>
-                </div>
-                <span className={`text-xs font-medium ${getRainIntensityColor(selectedForecast.rain.intensity)}`}>
-                  {selectedForecast.rain.intensity.toUpperCase()}
-                </span>
-              </div>
-              <div className="space-y-1 sm:space-y-2">
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  {(selectedForecast.rain.probability * 100).toFixed(0)}%
-                </div>
-                <div className="text-xs text-slate-400">
-                  Durchschnitt: {selectedForecast.rain.average.toFixed(2)} mm
-                </div>
-                <div className="text-xs text-slate-400">
-                  Intensität: {selectedForecast.rain.intensity}
-                </div>
-                <div className="text-xs text-slate-400">
-                  {selectedForecast.rain.count} Messungen
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Statistical Chart */}
-          <div className="glass-strong rounded-xl p-4 border border-white/20">
-            <h4 className="text-base sm:text-lg font-semibold text-white mb-4">Statistischer 24-Stunden Verlauf</h4>
-            <div className="h-24 sm:h-32 flex items-end justify-between gap-1">
-              {forecastData.map((data, index) => (
-                <div
-                  key={data.hour}
-                  className="flex-1 flex flex-col items-center"
-                  onClick={() => setSelectedHour(data.hour)}
+      {/* Hourly Analysis */}
+      {analysisMode === 'hourly' && (
+        <>
+          {/* Hour Selector */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-white mb-3">
+              <Clock className="w-4 h-4 inline mr-2" />
+              Uhrzeit für detaillierte Analyse
+            </label>
+            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-12 gap-1 sm:gap-2">
+              {Array.from({ length: 24 }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedHour(i)}
+                  className={`p-1 sm:p-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                    selectedHour === i
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                  }`}
                 >
-                  <div
-                    className={`w-full rounded-t transition-all cursor-pointer ${
-                      selectedHour === data.hour
-                        ? 'bg-primary-500'
-                        : 'bg-white/20 hover:bg-white/30'
-                    }`}
-                    style={{
-                      height: `${Math.max(8, (data.temperature.average + 10) * 1.5)}px`
-                    }}
-                  />
-                  <div className="text-xs text-slate-400 mt-1 hidden sm:block">
-                    {getTimeLabel(data.hour)}
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1 hidden lg:block">
-                    ±{data.temperature.standardDeviation.toFixed(1)}
-                  </div>
-                </div>
+                  {getTimeLabel(i)}
+                </button>
               ))}
             </div>
           </div>
-        </div>
+
+          {/* Advanced Forecast Display */}
+          {selectedForecast && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* Temperature */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Thermometer className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Temperatur</span>
+                    </div>
+                    {getTrendIcon(selectedForecast.temperature.trend)}
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {selectedForecast.temperature.average.toFixed(1)}°C
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Min: {selectedForecast.temperature.min.toFixed(1)}°C | 
+                      Max: {selectedForecast.temperature.max.toFixed(1)}°C
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Std. Dev: ±{selectedForecast.temperature.standardDeviation.toFixed(1)}°C
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedForecast.temperature.count} Messungen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Humidity */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Droplets className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Luftfeuchtigkeit</span>
+                    </div>
+                    {getTrendIcon(selectedForecast.humidity.trend)}
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {selectedForecast.humidity.average.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Min: {selectedForecast.humidity.min.toFixed(1)}% | 
+                      Max: {selectedForecast.humidity.max.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Std. Dev: ±{selectedForecast.humidity.standardDeviation.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedForecast.humidity.count} Messungen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pressure */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Luftdruck</span>
+                    </div>
+                    {getTrendIcon(selectedForecast.pressure.trend)}
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {(selectedForecast.pressure.average / 100).toFixed(0)} hPa
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Min: {(selectedForecast.pressure.min / 100).toFixed(0)} hPa | 
+                      Max: {(selectedForecast.pressure.max / 100).toFixed(0)} hPa
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Std. Dev: ±{(selectedForecast.pressure.standardDeviation / 100).toFixed(0)} hPa
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedForecast.pressure.count} Messungen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rain */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CloudRain className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Niederschlag</span>
+                    </div>
+                    <span className={`text-xs font-medium ${getRainIntensityColor(selectedForecast.rain.intensity)}`}>
+                      {selectedForecast.rain.intensity.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {(selectedForecast.rain.probability * 100).toFixed(0)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Durchschnitt: {selectedForecast.rain.average.toFixed(2)} mm
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Intensität: {selectedForecast.rain.intensity}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedForecast.rain.count} Messungen
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Statistical Chart */}
+              <div className="glass-strong rounded-xl p-4 border border-white/20">
+                <h4 className="text-base sm:text-lg font-semibold text-white mb-4">Statistischer 24-Stunden Verlauf</h4>
+                <div className="h-24 sm:h-32 flex items-end justify-between gap-1">
+                  {forecastData.map((data, index) => (
+                    <div
+                      key={data.hour}
+                      className="flex-1 flex flex-col items-center"
+                      onClick={() => setSelectedHour(data.hour)}
+                    >
+                      <div
+                        className={`w-full rounded-t transition-all cursor-pointer ${
+                          selectedHour === data.hour
+                            ? 'bg-primary-500'
+                            : 'bg-white/20 hover:bg-white/30'
+                        }`}
+                        style={{
+                          height: `${Math.max(8, (data.temperature.average + 10) * 1.5)}px`
+                        }}
+                      />
+                      <div className="text-xs text-slate-400 mt-1 hidden sm:block">
+                        {getTimeLabel(data.hour)}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1 hidden lg:block">
+                        ±{data.temperature.standardDeviation.toFixed(1)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Daily Analysis */}
+      {analysisMode === 'daily' && dataPoints === 1000 && (
+        <>
+          {/* Day Selector */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-white mb-3">
+              <Calendar className="w-4 h-4 inline mr-2" />
+              Tag für detaillierte Analyse
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+              {Array.from({ length: 7 }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedDay(i)}
+                  className={`p-2 sm:p-3 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
+                    selectedDay === i
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                  }`}
+                >
+                  {getDayLabel(i)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Daily Forecast Display */}
+          {selectedDailyForecast && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* Temperature */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Thermometer className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Temperatur</span>
+                    </div>
+                    {getTrendIcon(selectedDailyForecast.temperature.trend)}
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {selectedDailyForecast.temperature.average.toFixed(1)}°C
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Min: {selectedDailyForecast.temperature.min.toFixed(1)}°C | 
+                      Max: {selectedDailyForecast.temperature.max.toFixed(1)}°C
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Std. Dev: ±{selectedDailyForecast.temperature.standardDeviation.toFixed(1)}°C
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedDailyForecast.temperature.count} Messungen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Humidity */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Droplets className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Luftfeuchtigkeit</span>
+                    </div>
+                    {getTrendIcon(selectedDailyForecast.humidity.trend)}
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {selectedDailyForecast.humidity.average.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Min: {selectedDailyForecast.humidity.min.toFixed(1)}% | 
+                      Max: {selectedDailyForecast.humidity.max.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Std. Dev: ±{selectedDailyForecast.humidity.standardDeviation.toFixed(1)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedDailyForecast.humidity.count} Messungen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pressure */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Luftdruck</span>
+                    </div>
+                    {getTrendIcon(selectedDailyForecast.pressure.trend)}
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {(selectedDailyForecast.pressure.average / 100).toFixed(0)} hPa
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Min: {(selectedDailyForecast.pressure.min / 100).toFixed(0)} hPa | 
+                      Max: {(selectedDailyForecast.pressure.max / 100).toFixed(0)} hPa
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Std. Dev: ±{(selectedDailyForecast.pressure.standardDeviation / 100).toFixed(0)} hPa
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedDailyForecast.pressure.count} Messungen
+                    </div>
+                  </div>
+                </div>
+
+                {/* Rain */}
+                <div className="glass-strong rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-colors">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <CloudRain className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                      <span className="text-xs sm:text-sm font-medium text-white">Niederschlag</span>
+                    </div>
+                    <span className={`text-xs font-medium ${getRainIntensityColor(selectedDailyForecast.rain.intensity)}`}>
+                      {selectedDailyForecast.rain.intensity.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="space-y-1 sm:space-y-2">
+                    <div className="text-xl sm:text-2xl font-bold text-white">
+                      {(selectedDailyForecast.rain.probability * 100).toFixed(0)}%
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Durchschnitt: {selectedDailyForecast.rain.average.toFixed(2)} mm
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Intensität: {selectedDailyForecast.rain.intensity}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {selectedDailyForecast.rain.count} Messungen
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Daily Statistical Chart */}
+              <div className="glass-strong rounded-xl p-4 border border-white/20">
+                <h4 className="text-base sm:text-lg font-semibold text-white mb-4">Statistischer 7-Tage Verlauf</h4>
+                <div className="h-24 sm:h-32 flex items-end justify-between gap-2">
+                  {dailyForecastData.map((data, index) => (
+                    <div
+                      key={data.day}
+                      className="flex-1 flex flex-col items-center"
+                      onClick={() => setSelectedDay(data.day)}
+                    >
+                      <div
+                        className={`w-full rounded-t transition-all cursor-pointer ${
+                          selectedDay === data.day
+                            ? 'bg-primary-500'
+                            : 'bg-white/20 hover:bg-white/30'
+                        }`}
+                        style={{
+                          height: `${Math.max(8, (data.temperature.average + 10) * 1.5)}px`
+                        }}
+                      />
+                      <div className="text-xs text-slate-400 mt-1 hidden sm:block">
+                        {getDayLabel(data.day)}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1 hidden lg:block">
+                        ±{data.temperature.standardDeviation.toFixed(1)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
