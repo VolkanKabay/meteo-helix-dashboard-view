@@ -42,9 +42,11 @@ export interface ApiResponse {
 
 const API_URL = 'http://localhost:3001/api/weather';
 
-export const fetchWeatherData = async (): Promise<WeatherReading[]> => {
+export const fetchWeatherData = async (deviceId?: string): Promise<WeatherReading[]> => {
   try {
-    const response = await axios.get<ApiResponse>(API_URL);
+    const params = deviceId ? { deviceId } : {};
+    console.log('fetchWeatherData called with:', { deviceId, params });
+    const response = await axios.get<ApiResponse>(API_URL, { params });
 
     if (!response.data?.body || !Array.isArray(response.data.body)) {
       console.warn('No data received from API, using mock data');
@@ -58,26 +60,30 @@ export const fetchWeatherData = async (): Promise<WeatherReading[]> => {
   }
 };
 
-export const fetchLastTemperatureData = async (): Promise<number> => {
-  const response = await axios.get<ApiResponse>(API_URL);
+export const fetchLastTemperatureData = async (deviceId?: string): Promise<number> => {
+  const params = deviceId ? { deviceId } : {};
+  const response = await axios.get<ApiResponse>(API_URL, { params });
   const firstReading = response.data.body[0];
   return firstReading.data.temperature;
 }
 
-export const fetchLastHumidityData = async (): Promise<number> => {
-  const response = await axios.get<ApiResponse>(API_URL);
+export const fetchLastHumidityData = async (deviceId?: string): Promise<number> => {
+  const params = deviceId ? { deviceId } : {};
+  const response = await axios.get<ApiResponse>(API_URL, { params });
   const firstReading = response.data.body[0];
   return firstReading.data.humidity;
 }
 
-export const fetchLastPressureData = async (): Promise<number> => {
-  const response = await axios.get<ApiResponse>(API_URL);
+export const fetchLastPressureData = async (deviceId?: string): Promise<number> => {
+  const params = deviceId ? { deviceId } : {};
+  const response = await axios.get<ApiResponse>(API_URL, { params });
   const firstReading = response.data.body[0];
   return firstReading.data.pressure;
 }
 
-export const fetchLastRainData = async (): Promise<number> => {
-  const response = await axios.get<ApiResponse>(API_URL);
+export const fetchLastRainData = async (deviceId?: string): Promise<number> => {
+  const params = deviceId ? { deviceId } : {};
+  const response = await axios.get<ApiResponse>(API_URL, { params });
   const firstReading = response.data.body[0];
   return firstReading.data.rain;
 }

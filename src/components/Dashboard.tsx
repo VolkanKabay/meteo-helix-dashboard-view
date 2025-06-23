@@ -10,23 +10,28 @@ import {
   Activity
 } from 'lucide-react';
 import { fetchLastTemperatureData, fetchWeatherData, fetchLastHumidityData, fetchLastPressureData, fetchLastRainData } from '../services/weatherApi';
+import { locations, getDefaultLocation } from '../config/locations';
+import { Location } from '../components/LocationSelector';
 import MetricCard from './MetricCard';
 import TemperatureChart from './TemperatureChart';
 import WeatherMap from './WeatherMap';
 import StatusIndicator from './StatusIndicator';
+import LocationSelector from './LocationSelector';
 import { LoadingButton } from '@/components/ui/loading-button';
 
 const Dashboard: React.FC = () => {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
   const [temperature, setTemperature] = useState<number | null>(null);
   const [humidity, setHumidity] = useState<number | null>(null);
   const [pressure, setPressure] = useState<number | null>(null);
   const [rain, setRain] = useState<number | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location>(getDefaultLocation());
 
   const { data: weatherData = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ['weather-data'],
-    queryFn: fetchWeatherData,
+    queryKey: ['weather-data', selectedLocation.deviceId],
+    queryFn: () => fetchWeatherData(selectedLocation.deviceId),
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
     retry: 3,
   });
@@ -37,6 +42,21 @@ const Dashboard: React.FC = () => {
     await refetch();
     setIsRefreshing(false);
   };
+
+  const handleLocationChange = async (newLocation: Location) => {
+    setSelectedLocation(newLocation);
+    setLastRefresh(new Date());
+    setIsLocationLoading(true);
+    // The query will automatically refetch due to the queryKey change
+    // We'll reset the loading state when the query completes
+  };
+
+  // Reset location loading when query completes
+  useEffect(() => {
+    if (!isLoading && isLocationLoading) {
+      setIsLocationLoading(false);
+    }
+  }, [isLoading, isLocationLoading]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -50,10 +70,10 @@ const Dashboard: React.FC = () => {
     const fetchMetrics = async () => {
       try {
         const [temp, hum, pres, rainData] = await Promise.all([
-          fetchLastTemperatureData(),
-          fetchLastHumidityData(),
-          fetchLastPressureData(),
-          fetchLastRainData()
+          fetchLastTemperatureData(selectedLocation.deviceId),
+          fetchLastHumidityData(selectedLocation.deviceId),
+          fetchLastPressureData(selectedLocation.deviceId),
+          fetchLastRainData(selectedLocation.deviceId)
         ]);
         setTemperature(temp);
         setHumidity(hum);
@@ -65,7 +85,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchMetrics();
-  }, []);
+  }, [selectedLocation.deviceId]);
 
   const latestReading = weatherData[0];
   const previousReading = weatherData[1];
@@ -79,7 +99,8 @@ const Dashboard: React.FC = () => {
     };
   };
 
-  if (isLoading) {
+  // Only show loading screen if there's no data at all (initial load)
+  if (isLoading && !weatherData.length) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -135,17 +156,25 @@ const Dashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <LoadingButton
-            onClick={handleRefresh}
-            variant="outline"
-            size="lg"
-            className="bg-white/10 border-white/20 hover:bg-white/20 text-white"
-            isLoading={isRefreshing}
-            loadingText="Wird aktualisiert..."
-          >
-            <RefreshCw className="w-5 h-5 mr-2" />
-            Aktualisieren
-          </LoadingButton>
+          <div className="flex items-center gap-4">
+            <LocationSelector
+              selectedLocation={selectedLocation}
+              onLocationChange={handleLocationChange}
+              locations={locations}
+              isLoading={isLocationLoading}
+            />
+            <LoadingButton
+              onClick={handleRefresh}
+              variant="outline"
+              size="lg"
+              className="bg-white/10 border-white/20 hover:bg-white/20 text-white"
+              isLoading={isRefreshing}
+              loadingText="Wird aktualisiert..."
+            >
+              <RefreshCw className="w-5 h-5 mr-2" />
+              Aktualisieren
+            </LoadingButton>
+          </div>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-slate-400">
