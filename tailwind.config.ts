@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -134,6 +133,16 @@ export default {
 						opacity: '0.8'
 					}
 				},
+				'pulse-fast': {
+					'0%, 100%': {
+						opacity: '1',
+						transform: 'scale(1)'
+					},
+					'50%': {
+						opacity: '0.60',
+						transform: 'scale(1.1)'
+					}
+				},
 				'float': {
 					'0%, 100%': {
 						transform: 'translateY(0px)'
@@ -149,6 +158,7 @@ export default {
 				'fade-in': 'fade-in 0.6s ease-out',
 				'scale-in': 'scale-in 0.4s ease-out',
 				'pulse-slow': 'pulse-slow 4s ease-in-out infinite',
+				'pulse-fast': 'pulse-fast 1s ease-in-out infinite',
 				'float': 'float 8s ease-in-out infinite'
 			},
 			backgroundImage: {
